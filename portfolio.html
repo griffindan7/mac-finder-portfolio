@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio — Finder</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --win-bg: #f0f0f0;
+    --titlebar-top: #e0e0e0;
+    --titlebar-bot: #c8c8c8;
+    --titlebar-border: #a8a8a8;
+    --toolbar-top: #ebebeb;
+    --toolbar-bot: #d9d9d9;
+    --toolbar-border: #b8b8b8;
+    --sidebar-bg: #e5e5e5;
+    --sidebar-border: #c4c4c4;
+    --sidebar-text: #3a3a3a;
+    --sidebar-label: #888;
+    --sidebar-active-bg: #3478f6;
+    --sidebar-active-text: #fff;
+    --main-bg: #ffffff;
+    --item-hover: rgba(0,0,0,0.07);
+    --item-selected: #cce0ff;
+    --item-selected-border: #3478f6;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666;
+    --text-muted: #999;
+    --border: #d0d0d0;
+    --statusbar-bg: #ebebeb;
+    --statusbar-border: #c0c0c0;
+    --tag-bg: #e0ecff;
+    --tag-text: #2563eb;
+    --detail-bg: #f7f7f7;
+    --detail-border: #e0e0e0;
+    --btn-bg: linear-gradient(to bottom, #f5f5f5, #e2e2e2);
+    --btn-border: #b0b0b0;
+    --btn-hover: linear-gradient(to bottom, #eaeaea, #d4d4d4);
+    --btn-active-bg: #3478f6;
+    --btn-active-text: #fff;
+    --btn-active-border: #2060d0;
+    --pathbar-bg: #f0f0f0;
+    --pathbar-border: #d0d0d0;
+    --scrollbar-thumb: #c0c0c0;
+    --dot-r: #ff5f57; --dot-y: #febc2e; --dot-g: #28c840;
+    --shadow: 0 8px 40px rgba(0,0,0,0.22), 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  body {
+    background: #2c2c2e;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    padding: 24px;
+    background-image: radial-gradient(ellipse at 30% 20%, #3a3a4a 0%, #1c1c1e 100%);
+  }
+
+  /* WINDOW */
+  .window {
+    width: 860px;
+    max-width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 0.5px solid rgba(0,0,0,0.5);
+    background: var(--main-bg);
+    user-select: none;
+  }
+
+  /* TITLEBAR */
+  .titlebar {
+    height: 38px;
+    background: linear-gradient(to bottom, var(--titlebar-top), var(--titlebar-bot));
+    border-bottom: 1px solid var(--titlebar-border);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    gap: 8px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .traffic-lights { display: flex; gap: 7px; align-items: center; }
+  .dot {
+    width: 12px; height: 12px; border-radius: 50%; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; color: transparent; transition: color 0.1s;
+    flex-shrink: 0;
+  }
+  .dot:hover { color: rgba(0,0,0,0.5); }
+  .dot-r { background: var(--dot-r); border: 0.5px solid #d94f46; }
+  .dot-y { background: var(--dot-y); border: 0.5px solid #d4940e; }
+  .dot-g { background: var(--dot-g); border: 0.5px solid #1ca832; }
+  .titlebar-title {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    font-size: 13px; font-weight: 500; color: #3a3a3a;
+    display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .titlebar-icon { font-size: 14px; }
+
+  /* TOOLBAR */
+  .toolbar {
+    height: 46px;
+    background: linear-gradient(to bottom, var(--toolbar-top), var(--toolbar-bot));
+    border-bottom: 1px solid var(--toolbar-border);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Nav arrows */
+  .nav-group { display: flex; border-radius: 6px; overflow: hidden; border: 0.5px solid var(--btn-border); flex-shrink: 0; }
+  .nav-btn {
+    width: 28px; height: 26px;
+    background: var(--btn-bg);
+    border: none; outline: none; cursor: pointer;
+    font-size: 14px; color: #555;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s;
+  }
+  .nav-btn:first-child { border-right: 0.5px solid var(--btn-border); }
+  .nav-btn:hover { background: var(--btn-hover); }
+  .nav-btn:disabled { opacity: 0.35; cursor: default; }
+
+  /* View controls */
+  .view-group {
+    display: flex; margin-left: 10px; border-radius: 6px;
+    overflow: hidden; border: 0.5px solid var(--btn-border);
+    flex-shrink: 0;
+  }
+  .view-btn {
+    width: 32px; height: 26px;
+    background: var(--btn-bg);
+    border: none; outline: none; cursor: pointer;
+    font-size: 13px; color: #555;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .view-btn + .view-btn { border-left: 0.5px solid var(--btn-border); }
+  .view-btn:hover { background: var(--btn-hover); }
+  .view-btn.active {
+    background: linear-gradient(to bottom, #c0d0f0, #a8bff0);
+    color: #1a3a80;
+  }
+  .view-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
+  /* Sort / arrange dropdown */
+  .arrange-btn {
+    height: 26px; padding: 0 8px;
+    background: var(--btn-bg);
+    border: 0.5px solid var(--btn-border);
+    border-radius: 5px; outline: none; cursor: pointer;
+    font-size: 11px; color: #444;
+    display: flex; align-items: center; gap: 4px;
+    margin-left: 4px; flex-shrink: 0;
+    transition: background 0.1s;
+  }
+  .arrange-btn:hover { background: var(--btn-hover); }
+
+  /* Share / action button */
+  .action-btn {
+    width: 28px; height: 26px;
+    background: var(--btn-bg);
+    border: 0.5px solid var(--btn-border);
+    border-radius: 5px; outline: none; cursor: pointer;
+    font-size: 14px; color: #555;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.1s;
+    flex-shrink: 0;
+  }
+  .action-btn:hover { background: var(--btn-hover); }
+
+  /* Search */
+  .search-wrap { margin-left: auto; position: relative; flex-shrink: 0; }
+  .search-icon {
+    position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+    font-size: 12px; color: #aaa; pointer-events: none;
+  }
+  .search-input {
+    height: 22px; width: 160px; border-radius: 11px;
+    border: 1px solid #c4c4c4; background: rgba(255,255,255,0.9);
+    padding: 0 10px 0 24px; font-size: 12px; color: #333; outline: none;
+    font-family: inherit;
+    transition: width 0.2s, box-shadow 0.15s;
+  }
+  .search-input:focus { width: 200px; box-shadow: 0 0 0 2px rgba(52,120,246,0.35); border-color: #3478f6; }
+  .search-input::placeholder { color: #aaa; }
+
+  /* PATH BAR */
+  .pathbar {
+    height: 22px;
+    background: var(--pathbar-bg);
+    border-bottom: 1px solid var(--pathbar-border);
+    display: flex; align-items: center;
+    padding: 0 12px; gap: 3px;
+    font-size: 11px; color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+  .path-seg { cursor: pointer; color: #3478f6; }
+  .path-seg:hover { text-decoration: underline; }
+  .path-seg.current { color: var(--text-secondary); cursor: default; }
+  .path-sep { color: #bbb; margin: 0 1px; }
+
+  /* BODY */
+  .finder-body { display: flex; height: 480px; }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 165px; flex-shrink: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    overflow-y: auto; padding: 8px 0 16px;
+  }
+  .sidebar::-webkit-scrollbar { width: 6px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  .sidebar-section { margin-bottom: 4px; }
+  .sidebar-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.07em;
+    color: var(--sidebar-label); text-transform: uppercase;
+    padding: 8px 16px 3px; display: block;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 7px;
+    padding: 4px 8px 4px 16px; font-size: 12.5px;
+    color: var(--sidebar-text); cursor: pointer;
+    border-radius: 5px; margin: 1px 4px;
+    transition: background 0.1s;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .sidebar-item:hover { background: rgba(0,0,0,0.07); }
+  .sidebar-item.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-text); }
+  .sidebar-item.active .si-icon { filter: brightness(10); }
+  .si-icon { font-size: 14px; flex-shrink: 0; }
+  .sidebar-divider { height: 1px; background: var(--sidebar-border); margin: 6px 10px; }
+
+  /* MAIN CONTENT */
+  .main-content {
+    flex: 1; overflow: auto; background: var(--main-bg);
+    position: relative;
+  }
+  .main-content::-webkit-scrollbar { width: 8px; }
+  .main-content::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 4px; }
+
+  /* ICON VIEW */
+  #icon-view { padding: 16px; }
+  .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 4px;
+  }
+  .icon-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 5px; padding: 10px 6px 8px;
+    border-radius: 6px; cursor: pointer;
+    transition: background 0.1s;
+    border: 1.5px solid transparent;
+  }
+  .icon-item:hover { background: var(--item-hover); }
+  .icon-item.selected { background: var(--item-selected); border-color: var(--item-selected-border); }
+  .icon-item.selected .icon-label { background: #3478f6; color: #fff; border-radius: 3px; padding: 0 3px; }
+  .icon-emoji { font-size: 42px; line-height: 1; pointer-events: none; }
+  .icon-label {
+    font-size: 11px; color: var(--text-primary); text-align: center;
+    line-height: 1.3; word-break: break-word; max-width: 84px;
+    pointer-events: none;
+  }
+
+  /* LIST VIEW */
+  #list-view { display: none; }
+  .list-header {
+    display: grid; grid-template-columns: 1fr 100px 100px 80px;
+    padding: 0 12px; height: 22px; align-items: center;
+    background: linear-gradient(to bottom, #f0f0f0, #e4e4e4);
+    border-bottom: 1px solid #d0d0d0; position: sticky; top: 0; z-index: 1;
+  }
+  .list-header span {
+    font-size: 11px; font-weight: 600; color: #555; cursor: pointer;
+  }
+  .list-header span:hover { color: #222; }
+  .list-row {
+    display: grid; grid-template-columns: 1fr 100px 100px 80px;
+    padding: 0 12px; height: 22px; align-items: center;
+    border-bottom: 0.5px solid #f0f0f0; cursor: pointer;
+    font-size: 12px;
+  }
+  .list-row:hover { background: var(--item-hover); }
+  .list-row.selected { background: var(--item-selected); }
+  .list-cell-name { display: flex; align-items: center; gap: 6px; color: var(--text-primary); }
+  .list-cell-name span { font-size: 14px; }
+  .list-cell { color: var(--text-secondary); font-size: 11px; }
+
+  /* COLUMN VIEW */
+  #col-view { display: none; height: 100%; }
+  .col-container { display: flex; height: 100%; overflow-x: auto; }
+  .col-panel {
+    width: 200px; flex-shrink: 0; border-right: 1px solid #d4d4d4;
+    overflow-y: auto; padding: 4px 0;
+  }
+  .col-panel::-webkit-scrollbar { width: 5px; }
+  .col-panel::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+  .col-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 3px 10px 3px 8px; font-size: 12.5px;
+    color: var(--text-primary); cursor: pointer; border-radius: 4px; margin: 1px 3px;
+  }
+  .col-item:hover { background: rgba(0,0,0,0.07); }
+  .col-item.selected { background: #3478f6; color: #fff; }
+  .col-item-left { display: flex; align-items: center; gap: 6px; }
+  .col-item-arrow { font-size: 10px; color: #aaa; }
+  .col-item.selected .col-item-arrow { color: rgba(255,255,255,0.7); }
+  .col-detail {
+    flex: 1; padding: 16px; display: flex; flex-direction: column;
+    align-items: center; gap: 8px; overflow-y: auto;
+  }
+  .col-detail-icon { font-size: 56px; margin-bottom: 4px; }
+  .col-detail-name { font-size: 13px; font-weight: 600; color: var(--text-primary); text-align: center; }
+  .col-detail-sub { font-size: 11px; color: var(--text-secondary); text-align: center; }
+  .col-detail-divider { width: 100%; height: 0.5px; background: #e0e0e0; margin: 4px 0; }
+  .col-detail-row { width: 100%; display: flex; justify-content: space-between; font-size: 11px; }
+  .col-detail-key { color: var(--text-muted); }
+  .col-detail-val { color: var(--text-primary); font-weight: 500; text-align: right; max-width: 55%; }
+  .col-tags { display: flex; flex-wrap: wrap; gap: 4px; width: 100%; justify-content: flex-end; }
+  .col-tag { font-size: 10px; padding: 2px 6px; border-radius: 8px; background: var(--tag-bg); color: var(--tag-text); font-weight: 500; }
+
+  /* DETAIL PANEL (icon/list view) */
+  .detail-panel {
+    display: none;
+    width: 220px; flex-shrink: 0;
+    background: var(--detail-bg);
+    border-left: 1px solid var(--detail-border);
+    padding: 16px 12px; overflow-y: auto;
+    flex-direction: column; gap: 10px;
+  }
+  .detail-panel.visible { display: flex; }
+  .dp-icon { font-size: 52px; text-align: center; }
+  .dp-name { font-size: 13px; font-weight: 600; color: var(--text-primary); text-align: center; }
+  .dp-sub { font-size: 11px; color: var(--text-secondary); text-align: center; }
+  .dp-divider { height: 0.5px; background: var(--detail-border); }
+  .dp-section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.07em; color: var(--text-muted); text-transform: uppercase; }
+  .dp-row { display: flex; justify-content: space-between; align-items: flex-start; font-size: 11px; gap: 8px; }
+  .dp-key { color: var(--text-muted); flex-shrink: 0; }
+  .dp-val { color: var(--text-primary); font-weight: 500; text-align: right; }
+  .dp-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+  .dp-tag { font-size: 10px; padding: 2px 7px; border-radius: 8px; background: var(--tag-bg); color: var(--tag-text); font-weight: 500; }
+
+  /* STATUS BAR */
+  .statusbar {
+    height: 22px;
+    background: linear-gradient(to bottom, var(--statusbar-bg), #e2e2e2);
+    border-top: 1px solid var(--statusbar-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: #666; flex-shrink: 0;
+  }
+
+  /* Tooltip */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.75); color: #fff;
+    font-size: 10px; padding: 3px 7px; border-radius: 4px;
+    white-space: nowrap; pointer-events: none; z-index: 99;
+  }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; gap: 8px; opacity: 0.5;
+  }
+  .empty-state span { font-size: 36px; }
+  .empty-state p { font-size: 13px; color: var(--text-secondary); }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .icon-item { animation: fadeIn 0.18s ease both; }
+</style>
+</head>
+<body>
+
+<div class="window" id="window">
+
+  <!-- TITLEBAR -->
+  <div class="titlebar">
+    <div class="traffic-lights">
+      <div class="dot dot-r" title="Close">✕</div>
+      <div class="dot dot-y" title="Minimise">−</div>
+      <div class="dot dot-g" title="Maximise">+</div>
+    </div>
+    <div class="titlebar-title">
+      <span class="titlebar-icon" id="title-icon">🗂</span>
+      <span id="title-text">Portfolio</span>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <!-- Back / Forward -->
+    <div class="nav-group">
+      <button class="nav-btn" id="btn-back" onclick="navBack()" disabled data-tip="Back">‹</button>
+      <button class="nav-btn" id="btn-fwd" onclick="navFwd()" disabled data-tip="Forward">›</button>
+    </div>
+
+    <!-- View controls: Icon / List / Column -->
+    <div class="view-group" style="margin-left:8px">
+      <button class="view-btn active" id="vbtn-icon" onclick="setView('icon')" data-tip="Icon View">
+        <svg viewBox="0 0 14 14"><rect x="0" y="0" width="5.5" height="5.5" rx="1"/><rect x="8.5" y="0" width="5.5" height="5.5" rx="1"/><rect x="0" y="8.5" width="5.5" height="5.5" rx="1"/><rect x="8.5" y="8.5" width="5.5" height="5.5" rx="1"/></svg>
+      </button>
+      <button class="view-btn" id="vbtn-list" onclick="setView('list')" data-tip="List View">
+        <svg viewBox="0 0 14 14"><rect x="4" y="0.5" width="10" height="2" rx="1"/><rect x="4" y="6" width="10" height="2" rx="1"/><rect x="4" y="11.5" width="10" height="2" rx="1"/><rect x="0" y="0.5" width="2.5" height="2" rx="0.5"/><rect x="0" y="6" width="2.5" height="2" rx="0.5"/><rect x="0" y="11.5" width="2.5" height="2" rx="0.5"/></svg>
+      </button>
+      <button class="view-btn" id="vbtn-col" onclick="setView('col')" data-tip="Column View">
+        <svg viewBox="0 0 14 14"><rect x="0" y="0" width="3.5" height="14" rx="0.5"/><rect x="5.25" y="0" width="3.5" height="14" rx="0.5"/><rect x="10.5" y="0" width="3.5" height="14" rx="0.5"/></svg>
+      </button>
+    </div>
+
+    <!-- Sort/Arrange -->
+    <button class="arrange-btn" id="arrange-btn" onclick="toggleArrangeMenu()" data-tip="Sort &amp; Arrange">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M1 2.5h10M1 6h7M1 9.5h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+      <span id="arrange-label">Name</span>
+      <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 2.5l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/></svg>
+    </button>
+    <div id="arrange-menu" style="display:none;position:absolute;top:84px;left:auto;background:#fff;border:0.5px solid #c0c0c0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:100;min-width:130px;padding:4px 0;">
+      <div class="am-item" onclick="setSortBy('name')">Name</div>
+      <div class="am-item" onclick="setSortBy('type')">Kind</div>
+      <div class="am-item" onclick="setSortBy('date')">Date Modified</div>
+      <div class="am-item" onclick="setSortBy('size')">Size</div>
+    </div>
+
+    <!-- Action / share -->
+    <button class="action-btn" data-tip="Share">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5l-2.5-3-2.5 3M6.5 1.5v7M2 9v2.5h9V9"/></svg>
+    </button>
+
+    <button class="action-btn" id="info-btn" onclick="toggleInfoPanel()" data-tip="Get Info" style="margin-left:2px">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="5.5"/><line x1="6.5" y1="5.5" x2="6.5" y2="9.5"/><circle cx="6.5" cy="3.5" r="0.6" fill="currentColor"/></svg>
+    </button>
+
+    <!-- Search -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" type="text" placeholder="Search" id="search-input" oninput="doSearch(this.value)">
+    </div>
+  </div>
+
+  <!-- PATH BAR -->
+  <div class="pathbar" id="pathbar"></div>
+
+  <!-- FINDER BODY -->
+  <div class="finder-body">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <span class="sidebar-label">Favourites</span>
+        <div class="sidebar-item active" id="si-home" onclick="navigate('home')">
+          <span class="si-icon">🏠</span> Home
+        </div>
+        <div class="sidebar-item" id="si-projects" onclick="navigate('projects')">
+          <span class="si-icon">📁</span> Projects
+        </div>
+        <div class="sidebar-item" id="si-about" onclick="navigate('about')">
+          <span class="si-icon">👤</span> About Me
+        </div>
+        <div class="sidebar-item" id="si-skills" onclick="navigate('skills')">
+          <span class="si-icon">⚙️</span> Skills
+        </div>
+        <div class="sidebar-item" id="si-contact" onclick="navigate('contact')">
+          <span class="si-icon">✉️</span> Contact
+        </div>
+      </div>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section">
+        <span class="sidebar-label">External</span>
+        <div class="sidebar-item" id="si-github" onclick="navigate('github')">
+          <span class="si-icon">🐙</span> GitHub
+        </div>
+        <div class="sidebar-item" id="si-linkedin" onclick="navigate('linkedin')">
+          <span class="si-icon">💼</span> LinkedIn
+        </div>
+        <div class="sidebar-item" id="si-cv" onclick="navigate('cv')">
+          <span class="si-icon">📄</span> CV / Résumé
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN VIEWS WRAPPER -->
+    <div class="main-content" id="main-content">
+
+      <!-- ICON VIEW -->
+      <div id="icon-view">
+        <div class="icon-grid" id="icon-grid"></div>
+      </div>
+
+      <!-- LIST VIEW -->
+      <div id="list-view">
+        <div class="list-header">
+          <span onclick="setSortBy('name')">Name</span>
+          <span onclick="setSortBy('date')">Date Modified</span>
+          <span onclick="setSortBy('size')">Size</span>
+          <span onclick="setSortBy('type')">Kind</span>
+        </div>
+        <div id="list-rows"></div>
+      </div>
+
+      <!-- COLUMN VIEW -->
+      <div id="col-view">
+        <div class="col-container" id="col-container"></div>
+      </div>
+
+    </div>
+
+    <!-- DETAIL / INFO PANEL -->
+    <div class="detail-panel" id="detail-panel">
+      <div style="text-align:center;opacity:0.35;padding-top:40px">
+        <div style="font-size:28px">ℹ️</div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:6px">Select an item to<br>see its info</p>
+      </div>
+    </div>
+
+  </div><!-- end finder-body -->
+
+  <!-- STATUS BAR -->
+  <div class="statusbar" id="statusbar">—</div>
+
+</div><!-- end window -->
+
+<style>
+  .am-item {
+    padding: 5px 14px; font-size: 12px; color: #333; cursor: pointer;
+  }
+  .am-item:hover { background: #3478f6; color: #fff; }
+</style>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+const folders = {
+  home: {
+    label: 'Home', icon: '🏠',
+    items: [
+      { id: 'projects', name: 'Projects',   icon: '📁', type: 'folder', kind: 'Folder',       date: '08 May 2025', size: '—'      },
+      { id: 'about',    name: 'About Me',   icon: '👤', type: 'folder', kind: 'Folder',       date: '08 May 2025', size: '—'      },
+      { id: 'skills',   name: 'Skills',     icon: '⚙️', type: 'folder', kind: 'Folder',       date: '08 May 2025', size: '—'      },
+      { id: 'contact',  name: 'Contact',    icon: '✉️', type: 'folder', kind: 'Folder',       date: '08 May 2025', size: '—'      },
+      { id: 'cv',       name: 'CV.pdf',     icon: '📄', type: 'file',   kind: 'PDF Document', date: '01 Apr 2025', size: '142 KB' },
+    ]
+  },
+  projects: {
+    label: 'Projects', icon: '📁',
+    items: [
+      { id: 'proj_dash',  name: 'Dashboard Rebuild',     icon: '📊', type: 'file', kind: 'Power BI',  date: '10 Apr 2025', size: '3.4 MB' },
+      { id: 'proj_inv',   name: 'Inventory Tracker',     icon: '📦', type: 'file', kind: 'Excel',     date: '15 Jan 2025', size: '840 KB' },
+      { id: 'proj_sales', name: 'Sales Forecast Model',  icon: '📈', type: 'file', kind: 'Python',    date: '03 Mar 2025', size: '1.2 MB' },
+      { id: 'proj_snack', name: 'Snack Analytics',       icon: '🥐', type: 'file', kind: 'Power BI',  date: '22 Feb 2025', size: '2.1 MB' },
+    ]
+  },
+  about: {
+    label: 'About Me', icon: '👤',
+    items: [
+      { id: 'about_readme', name: 'README.txt', icon: '📝', type: 'file', kind: 'Plain Text', date: '08 May 2025', size: '4 KB' },
+    ]
+  },
+  skills: {
+    label: 'Skills', icon: '⚙️',
+    items: [
+      { id: 'skill_sql',     name: 'SQL',          icon: '🗄️', type: 'file', kind: 'Language',  date: '—', size: '—' },
+      { id: 'skill_powerbi', name: 'Power BI',     icon: '📊', type: 'file', kind: 'Tool',      date: '—', size: '—' },
+      { id: 'skill_excel',   name: 'Excel',        icon: '📗', type: 'file', kind: 'Tool',      date: '—', size: '—' },
+      { id: 'skill_python',  name: 'Python',       icon: '🐍', type: 'file', kind: 'Language',  date: '—', size: '—' },
+      { id: 'skill_dax',     name: 'DAX',          icon: '🔢', type: 'file', kind: 'Language',  date: '—', size: '—' },
+    ]
+  },
+  contact: {
+    label: 'Contact', icon: '✉️',
+    items: [
+      { id: 'contact_email', name: 'Email',    icon: '📧', type: 'file', kind: 'Contact', date: '—', size: '—' },
+      { id: 'contact_gh',    name: 'GitHub',   icon: '🐙', type: 'file', kind: 'Link',    date: '—', size: '—' },
+      { id: 'contact_li',    name: 'LinkedIn', icon: '💼', type: 'file', kind: 'Link',    date: '—', size: '—' },
+    ]
+  },
+  github: {
+    label: 'GitHub', icon: '🐙',
+    items: []
+  },
+  linkedin: {
+    label: 'LinkedIn', icon: '💼',
+    items: []
+  },
+  cv: {
+    label: 'CV.pdf', icon: '📄',
+    items: []
+  }
+};
+
+const details = {
+  home:         { icon:'🏠', name:'Home', sub:'Portfolio root', rows:[{k:'Items',v:'5'},{k:'Type',v:'Root folder'}], tags:[] },
+  projects:     { icon:'📁', name:'Projects', sub:'4 items', rows:[{k:'Items',v:'4'},{k:'Type',v:'Folder'}], tags:[] },
+  about:        { icon:'👤', name:'About Me', sub:'1 item', rows:[{k:'Type',v:'Folder'}], tags:[] },
+  skills:       { icon:'⚙️', name:'Skills', sub:'5 items', rows:[{k:'Type',v:'Folder'}], tags:[] },
+  contact:      { icon:'✉️', name:'Contact', sub:'3 items', rows:[{k:'Type',v:'Folder'}], tags:[] },
+  github:       { icon:'🐙', name:'GitHub', sub:'github.com/yourname', rows:[{k:'URL',v:'github.com/yourname'}], tags:[] },
+  linkedin:     { icon:'💼', name:'LinkedIn', sub:'linkedin.com/in/yourname', rows:[{k:'URL',v:'linkedin.com/in/yourname'}], tags:[] },
+  cv:           { icon:'📄', name:'CV.pdf', sub:'PDF Document · 142 KB', rows:[{k:'Size',v:'142 KB'},{k:'Modified',v:'01 Apr 2025'}], tags:[] },
+  proj_dash:    { icon:'📊', name:'Dashboard Rebuild', sub:'Power BI · Apr 2025', rows:[{k:'Stack',v:'Power BI, SQL, DAX'},{k:'Impact',v:'−60% reporting time'},{k:'Status',v:'Shipped ✓'},{k:'Size',v:'3.4 MB'}], tags:['Power BI','SQL','DAX'] },
+  proj_inv:     { icon:'📦', name:'Inventory Tracker', sub:'Excel VBA · Jan 2025', rows:[{k:'Stack',v:'Excel, VBA, Power Query'},{k:'Impact',v:'Automated stock reports'},{k:'Status',v:'Shipped ✓'},{k:'Size',v:'840 KB'}], tags:['Excel','VBA','Power Query'] },
+  proj_sales:   { icon:'📈', name:'Sales Forecast Model', sub:'Python · Mar 2025', rows:[{k:'Stack',v:'Python, pandas, Prophet'},{k:'Impact',v:'12-week forecast'},{k:'Status',v:'In Progress'},{k:'Size',v:'1.2 MB'}], tags:['Python','pandas','Prophet'] },
+  proj_snack:   { icon:'🥐', name:'Snack Analytics', sub:'Power BI · Feb 2025', rows:[{k:'Stack',v:'SQL, Power BI'},{k:'Impact',v:'Unified SKU view'},{k:'Status',v:'Shipped ✓'},{k:'Size',v:'2.1 MB'}], tags:['SQL','Power BI'] },
+  about_readme: { icon:'📝', name:'README.txt', sub:'About the developer', rows:[{k:'Name',v:'Your Name'},{k:'Role',v:'Data Analyst'},{k:'Based',v:'Dublin, Ireland'},{k:'Exp',v:'3+ years analytics'}], tags:[] },
+  skill_sql:     { icon:'🗄️', name:'SQL', sub:'Language · Advanced', rows:[{k:'Level',v:'Advanced'},{k:'Used at',v:'Tayto, Verizon'}], tags:['Databases','Queries','ETL'] },
+  skill_powerbi: { icon:'📊', name:'Power BI', sub:'Tool · Advanced', rows:[{k:'Level',v:'Advanced'},{k:'Focus',v:'Dashboards, DAX'}], tags:['DAX','Visuals','Reports'] },
+  skill_excel:   { icon:'📗', name:'Excel', sub:'Tool · Expert', rows:[{k:'Level',v:'Expert'},{k:'Focus',v:'Power Query, VBA'}], tags:['Power Query','VBA','Pivot'] },
+  skill_python:  { icon:'🐍', name:'Python', sub:'Language · Intermediate', rows:[{k:'Level',v:'Intermediate'},{k:'Libraries',v:'pandas, matplotlib'}], tags:['pandas','numpy','matplotlib'] },
+  skill_dax:     { icon:'🔢', name:'DAX', sub:'Language · Advanced', rows:[{k:'Level',v:'Advanced'},{k:'Used in',v:'Power BI'}], tags:['Power BI','Calculated Cols'] },
+  contact_email: { icon:'📧', name:'Email', sub:'you@example.com', rows:[{k:'Address',v:'you@example.com'}], tags:[] },
+  contact_gh:    { icon:'🐙', name:'GitHub', sub:'github.com/yourname', rows:[{k:'URL',v:'github.com/yourname'}], tags:[] },
+  contact_li:    { icon:'💼', name:'LinkedIn', sub:'linkedin.com/in/yourname', rows:[{k:'URL',v:'linkedin.com/in/yourname'}], tags:[] },
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let currentFolder   = 'home';
+let currentView     = 'icon';   // 'icon' | 'list' | 'col'
+let selectedItem    = null;
+let sortBy          = 'name';
+let infoPanelOpen   = false;
+let navHistory      = ['home'];
+let navIndex        = 0;
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function navigate(id, pushHistory = true) {
+  if (!folders[id]) return;
+  currentFolder = id;
+  selectedItem  = null;
+
+  if (pushHistory) {
+    navHistory = navHistory.slice(0, navIndex + 1);
+    navHistory.push(id);
+    navIndex = navHistory.length - 1;
+  }
+
+  updateNavBtns();
+  updateSidebar(id);
+  updatePathBar(id);
+  renderCurrentView();
+  clearDetailPanel();
+
+  const f = folders[id];
+  document.getElementById('title-icon').textContent = f.icon;
+  document.getElementById('title-text').textContent = 'Portfolio — ' + f.label;
+}
+
+function navBack() {
+  if (navIndex > 0) { navIndex--; navigate(navHistory[navIndex], false); }
+}
+function navFwd() {
+  if (navIndex < navHistory.length - 1) { navIndex++; navigate(navHistory[navIndex], false); }
+}
+function updateNavBtns() {
+  document.getElementById('btn-back').disabled = navIndex === 0;
+  document.getElementById('btn-fwd').disabled  = navIndex === navHistory.length - 1;
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+function updateSidebar(id) {
+  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('si-' + id);
+  if (el) el.classList.add('active');
+}
+
+// ─── PATH BAR ─────────────────────────────────────────────────────────────────
+function updatePathBar(id) {
+  const pb = document.getElementById('pathbar');
+  const f  = folders[id];
+  if (id === 'home') {
+    pb.innerHTML = `<span class="path-seg current">Portfolio</span>`;
+  } else {
+    pb.innerHTML = `<span class="path-seg" onclick="navigate('home')">Portfolio</span><span class="path-sep"> › </span><span class="path-seg current">${f.label}</span>`;
+  }
+}
+
+// ─── VIEW SWITCHING ───────────────────────────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  ['icon','list','col'].forEach(x => {
+    document.getElementById(x + '-view').style.display = 'none';
+    document.getElementById('vbtn-' + x).classList.remove('active');
+  });
+  document.getElementById(v + '-view').style.display = (v === 'col') ? 'block' : 'block';
+  document.getElementById('vbtn-' + v).classList.add('active');
+  renderCurrentView();
+}
+
+function renderCurrentView() {
+  document.getElementById('icon-view').style.display = currentView === 'icon' ? 'block' : 'none';
+  document.getElementById('list-view').style.display = currentView === 'list' ? 'block' : 'none';
+  document.getElementById('col-view').style.display  = currentView === 'col'  ? 'block' : 'none';
+
+  if (currentView === 'icon') renderIconView();
+  if (currentView === 'list') renderListView();
+  if (currentView === 'col')  renderColView();
+}
+
+// ─── ICON VIEW ────────────────────────────────────────────────────────────────
+function renderIconView(filter='') {
+  const grid  = document.getElementById('icon-grid');
+  const items = getSortedItems(currentFolder, filter);
+  grid.innerHTML = '';
+
+  if (!items.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span>🔍</span><p>No items found</p></div>`;
+    updateStatus(0);
+    return;
+  }
+
+  items.forEach((item, i) => {
+    const el = document.createElement('div');
+    el.className = 'icon-item';
+    el.style.animationDelay = (i * 0.03) + 's';
+    if (item.id === selectedItem) el.classList.add('selected');
+    el.innerHTML = `<div class="icon-emoji">${item.icon}</div><div class="icon-label">${item.name}</div>`;
+    el.onclick = () => selectItem(item.id);
+    el.ondblclick = () => openItem(item);
+    grid.appendChild(el);
+  });
+  updateStatus(items.length);
+}
+
+// ─── LIST VIEW ────────────────────────────────────────────────────────────────
+function renderListView(filter='') {
+  const rows  = document.getElementById('list-rows');
+  const items = getSortedItems(currentFolder, filter);
+  rows.innerHTML = '';
+
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'list-row' + (item.id === selectedItem ? ' selected' : '');
+    el.innerHTML = `
+      <div class="list-cell-name"><span>${item.icon}</span>${item.name}</div>
+      <div class="list-cell">${item.date}</div>
+      <div class="list-cell">${item.size}</div>
+      <div class="list-cell">${item.kind}</div>
+    `;
+    el.onclick    = () => selectItem(item.id);
+    el.ondblclick = () => openItem(item);
+    rows.appendChild(el);
+  });
+  updateStatus(items.length);
+}
+
+// ─── COLUMN VIEW ─────────────────────────────────────────────────────────────
+function renderColView() {
+  const cont  = document.getElementById('col-container');
+  const items = getSortedItems(currentFolder);
+  cont.innerHTML = '';
+
+  const panel = document.createElement('div');
+  panel.className = 'col-panel';
+
+  items.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'col-item' + (item.id === selectedItem ? ' selected' : '');
+    const hasChildren = item.type === 'folder' && folders[item.id] && folders[item.id].items.length > 0;
+    el.innerHTML = `
+      <div class="col-item-left"><span>${item.icon}</span>${item.name}</div>
+      ${hasChildren ? '<span class="col-item-arrow">›</span>' : ''}
+    `;
+    el.onclick = () => {
+      selectedItem = item.id;
+      renderColView();
+      // show detail in rightmost panel
+    };
+    panel.appendChild(el);
+  });
+  cont.appendChild(panel);
+
+  // Show selected item detail
+  if (selectedItem) {
+    const d = details[selectedItem];
+    if (d) {
+      const dp = document.createElement('div');
+      dp.className = 'col-detail';
+      dp.innerHTML = `
+        <div class="col-detail-icon">${d.icon}</div>
+        <div class="col-detail-name">${d.name}</div>
+        <div class="col-detail-sub">${d.sub}</div>
+        <div class="col-detail-divider"></div>
+        ${d.rows.map(r=>`<div class="col-detail-row"><span class="col-detail-key">${r.k}</span><span class="col-detail-val">${r.v}</span></div>`).join('')}
+        ${d.tags.length ? `<div class="col-detail-divider"></div><div class="col-tags">${d.tags.map(t=>`<span class="col-tag">${t}</span>`).join('')}</div>` : ''}
+      `;
+      cont.appendChild(dp);
+    }
+  }
+  updateStatus(items.length);
+}
+
+// ─── SELECTION & OPENING ─────────────────────────────────────────────────────
+function selectItem(id) {
+  selectedItem = id;
+  renderCurrentView();
+  if (infoPanelOpen) showDetailPanel(id);
+}
+
+function openItem(item) {
+  if (item.type === 'folder') {
+    navigate(item.id);
+  } else {
+    selectItem(item.id);
+    if (!infoPanelOpen) toggleInfoPanel();
+  }
+}
+
+// ─── DETAIL PANEL ─────────────────────────────────────────────────────────────
+function toggleInfoPanel() {
+  infoPanelOpen = !infoPanelOpen;
+  const dp = document.getElementById('detail-panel');
+  dp.classList.toggle('visible', infoPanelOpen);
+  if (infoPanelOpen && selectedItem) showDetailPanel(selectedItem);
+}
+
+function showDetailPanel(id) {
+  const dp = document.getElementById('detail-panel');
+  const d  = details[id] || details[currentFolder];
+  if (!d) return;
+  dp.innerHTML = `
+    <div class="dp-icon">${d.icon}</div>
+    <div class="dp-name">${d.name}</div>
+    <div class="dp-sub">${d.sub}</div>
+    <div class="dp-divider"></div>
+    <span class="dp-section-label">General</span>
+    ${d.rows.map(r=>`<div class="dp-row"><span class="dp-key">${r.k}</span><span class="dp-val">${r.v}</span></div>`).join('')}
+    ${d.tags.length ? `<div class="dp-divider"></div><span class="dp-section-label">Tags</span><div class="dp-tags">${d.tags.map(t=>`<span class="dp-tag">${t}</span>`).join('')}</div>` : ''}
+  `;
+}
+
+function clearDetailPanel() {
+  if (infoPanelOpen) {
+    document.getElementById('detail-panel').innerHTML = `
+      <div style="text-align:center;opacity:0.35;padding-top:40px">
+        <div style="font-size:28px">ℹ️</div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:6px">Select an item to<br>see its info</p>
+      </div>`;
+  }
+}
+
+// ─── SORT ─────────────────────────────────────────────────────────────────────
+function getSortedItems(folderId, filter='') {
+  let items = [...(folders[folderId]?.items || [])];
+  if (filter) items = items.filter(i => i.name.toLowerCase().includes(filter.toLowerCase()));
+  items.sort((a, b) => {
+    if (sortBy === 'name') return a.name.localeCompare(b.name);
+    if (sortBy === 'type') return a.kind.localeCompare(b.kind);
+    if (sortBy === 'date') return a.date.localeCompare(b.date);
+    if (sortBy === 'size') return a.size.localeCompare(b.size);
+    return 0;
+  });
+  return items;
+}
+
+function setSortBy(by) {
+  sortBy = by;
+  document.getElementById('arrange-label').textContent = by.charAt(0).toUpperCase() + by.slice(1);
+  document.getElementById('arrange-menu').style.display = 'none';
+  renderCurrentView();
+}
+
+function toggleArrangeMenu() {
+  const m = document.getElementById('arrange-menu');
+  m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  // Position relative to button
+  const btn = document.getElementById('arrange-btn');
+  const rect = btn.getBoundingClientRect();
+  const wr   = document.getElementById('window').getBoundingClientRect();
+  m.style.left = (rect.left - wr.left) + 'px';
+  m.style.top  = (rect.bottom - wr.top + 2) + 'px';
+  m.style.position = 'absolute';
+  document.getElementById('window').style.position = 'relative';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#arrange-btn') && !e.target.closest('#arrange-menu')) {
+    document.getElementById('arrange-menu').style.display = 'none';
+  }
+});
+
+// ─── SEARCH ───────────────────────────────────────────────────────────────────
+function doSearch(q) {
+  if (currentView === 'icon') renderIconView(q);
+  if (currentView === 'list') renderListView(q);
+}
+
+// ─── STATUS BAR ───────────────────────────────────────────────────────────────
+function updateStatus(n) {
+  document.getElementById('statusbar').textContent = n + ' item' + (n !== 1 ? 's' : '');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+navigate('home', false);
+</script>
+</body>
+</html>
