@@ -70,30 +70,6 @@
     border: 0.5px solid rgba(0,0,0,0.5);
     background: var(--main-bg);
     user-select: none;
-    transition: all 0.3s ease;
-  }
-  .window.maximized {
-    width: 100vw;
-    height: 100vh;
-    border-radius: 0;
-    max-width: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-  }
-  .window.maximized .finder-body {
-    height: calc(100vh - 106px);
-  }
-  .resize-handle {
-    position: absolute;
-    z-index: 100;
-  }
-  .resize-handle.se {
-    bottom: 0;
-    right: 0;
-    width: 20px;
-    height: 20px;
-    cursor: se-resize;
   }
 
   /* TITLEBAR */
@@ -411,6 +387,16 @@
     100% { opacity: 1; transform: scale(1); }
   }
   .window.gotcha { animation: closeGotcha 0.6s ease-out; }
+  @keyframes minimizeToDock {
+    0% { opacity: 1; transform: scale(1) translate(0, 0); }
+    100% { opacity: 0.5; transform: scale(0.15) translate(280px, 200px); }
+  }
+  .window.minimized { animation: minimizeToDock 0.4s ease-in forwards; }
+  @keyframes restoreFromDock {
+    0% { opacity: 0.5; transform: scale(0.15) translate(280px, 200px); }
+    100% { opacity: 1; transform: scale(1) translate(0, 0); }
+  }
+  .window.restoring { animation: restoreFromDock 0.4s ease-out forwards; }
 </style>
 </head>
 <body>
@@ -422,7 +408,7 @@
     <div class="traffic-lights">
       <div class="dot dot-r" title="Close" onclick="closeGotcha()">✕</div>
       <div class="dot dot-y" title="Minimise" onclick="minimizeWindow()">−</div>
-      <div class="dot dot-g" title="Maximise" onclick="toggleMaximize()">+</div>
+      <div class="dot dot-g" title="Maximise">+</div>
     </div>
     <div class="titlebar-title">
       <span class="titlebar-icon" id="title-icon">🗂</span>
@@ -641,7 +627,7 @@ const details = {
   proj_inv:     { icon:'📦', name:'Inventory Tracker', sub:'Excel VBA · Jan 2025', rows:[{k:'Stack',v:'Excel, VBA, Power Query'},{k:'Impact',v:'Automated stock reports'},{k:'Status',v:'Shipped ✓'},{k:'Size',v:'840 KB'}], tags:['Excel','VBA','Power Query'] },
   proj_sales:   { icon:'📈', name:'Sales Forecast Model', sub:'Python · Mar 2025', rows:[{k:'Stack',v:'Python, pandas, Prophet'},{k:'Impact',v:'12-week forecast'},{k:'Status',v:'In Progress'},{k:'Size',v:'1.2 MB'}], tags:['Python','pandas','Prophet'] },
   proj_snack:   { icon:'🥐', name:'Snack Analytics', sub:'Power BI · Feb 2025', rows:[{k:'Stack',v:'SQL, Power BI'},{k:'Impact',v:'Unified SKU view'},{k:'Status',v:'Shipped ✓'},{k:'Size',v:'2.1 MB'}], tags:['SQL','Power BI'] },
-  about_readme: { icon:'📝', name:'README.txt', sub:'About the developer', rows:[{k:'Name',v:'Daniel Griffin'},{k:'Role',v:'TechnicalData Analyst'},{k:'Based',v:'Meath, Ireland'},{k:'Exp',v:'3+ years analytics'}], tags:[] },
+  about_readme: { icon:'📝', name:'README.txt', sub:'About the developer', rows:[{k:'Name',v:'Daniel Griffin'},{k:'Role',v:'Technical Data Analyst'},{k:'Based',v:'Meath, Ireland'},{k:'Exp',v:'3+ years analytics'}], tags:[] },
   skill_sql:     { icon:'🗄️', name:'SQL', sub:'Language · Advanced', rows:[{k:'Level',v:'Advanced'},{k:'Used at',v:'Tayto, Verizon'}], tags:['Databases','Queries','ETL'] },
   skill_powerbi: { icon:'📊', name:'Power BI', sub:'Tool · Advanced', rows:[{k:'Level',v:'Advanced'},{k:'Focus',v:'Dashboards, DAX'}], tags:['DAX','Visuals','Reports'] },
   skill_excel:   { icon:'📗', name:'Excel', sub:'Tool · Expert', rows:[{k:'Level',v:'Expert'},{k:'Focus',v:'Power Query, VBA'}], tags:['Power Query','VBA','Pivot'] },
@@ -948,58 +934,25 @@ function closeGotcha() {
 let isMinimized = false;
 function minimizeWindow() {
   const win = document.getElementById('window');
-  isMinimized = !isMinimized;
-  win.style.display = isMinimized ? 'none' : 'block';
+  if (isMinimized) {
+    win.classList.remove('minimized');
+    win.classList.add('restoring');
+    setTimeout(() => win.classList.remove('restoring'), 400);
+    isMinimized = false;
+  } else {
+    win.classList.add('minimized');
+    isMinimized = true;
+  }
 }
 
-// Restore on click anywhere when minimized
+// Restore on any click when minimized
 document.addEventListener('click', (e) => {
-  if (isMinimized) {
+  const win = document.getElementById('window');
+  if (isMinimized && !win.classList.contains('minimized')) return;
+  if (isMinimized && !win.contains(e.target)) {
     minimizeWindow();
   }
 }, true);
-
-// ─── MAXIMIZE ─────────────────────────────────────────────────────────────────
-let isMaximized = false;
-function toggleMaximize() {
-  const win = document.getElementById('window');
-  isMaximized = !isMaximized;
-  win.classList.toggle('maximized', isMaximized);
-}
-
-// ─── RESIZABLE ────────────────────────────────────────────────────────────────
-let isResizing = false;
-let startX = 0;
-let startY = 0;
-let startWidth = 0;
-let startHeight = 0;
-
-const win = document.getElementById('window');
-const resizeHandle = document.createElement('div');
-resizeHandle.className = 'resize-handle se';
-win.appendChild(resizeHandle);
-
-resizeHandle.addEventListener('mousedown', (e) => {
-  if (isMaximized) return;
-  isResizing = true;
-  startX = e.clientX;
-  startY = e.clientY;
-  startWidth = win.offsetWidth;
-  startHeight = win.offsetHeight;
-  e.preventDefault();
-});
-
-document.addEventListener('mousemove', (e) => {
-  if (!isResizing) return;
-  const newWidth = startWidth + (e.clientX - startX);
-  const newHeight = startHeight + (e.clientY - startY);
-  win.style.width = Math.max(300, newWidth) + 'px';
-  win.style.height = Math.max(200, newHeight) + 'px';
-});
-
-document.addEventListener('mouseup', () => {
-  isResizing = false;
-});
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 navigate('home', false);
