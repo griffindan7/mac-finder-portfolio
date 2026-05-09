@@ -49,14 +49,14 @@
   }
 
   body {
-    background: #2c2c2e;
+    background: #0a1428;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
     padding: 24px;
-    background-image: radial-gradient(ellipse at 30% 20%, #3a3a4a 0%, #1c1c1e 100%);
+    background-image: radial-gradient(ellipse 1200px 400px at 50% 100%, #4a3a7f 0%, #2d1b4e 25%, #1a0f2e 50%, #0a0515 100%);
     position: relative;
   }
 
@@ -942,6 +942,7 @@ function minimizeWindow() {
   } else {
     win.classList.add('minimized');
     isMinimized = true;
+    setTimeout(() => minimizeWindow(), 1500);
   }
 }
 
