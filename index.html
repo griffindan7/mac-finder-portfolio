@@ -73,13 +73,27 @@
     transition: all 0.3s ease;
   }
   .window.maximized {
-    width: 90vw;
-    height: 90vh;
+    width: 100vw;
+    height: 100vh;
     border-radius: 0;
     max-width: none;
+    position: fixed;
+    top: 0;
+    left: 0;
   }
   .window.maximized .finder-body {
-    height: calc(100% - 106px);
+    height: calc(100vh - 106px);
+  }
+  .resize-handle {
+    position: absolute;
+    z-index: 100;
+  }
+  .resize-handle.se {
+    bottom: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    cursor: se-resize;
   }
 
   /* TITLEBAR */
@@ -397,16 +411,6 @@
     100% { opacity: 1; transform: scale(1); }
   }
   .window.gotcha { animation: closeGotcha 0.6s ease-out; }
-  @keyframes minimizeToDoc {
-    0% { opacity: 1; transform: scale(1) translate(0, 0); }
-    100% { opacity: 0.3; transform: scale(0.1) translate(-350px, 300px); }
-  }
-  .window.minimized { animation: minimizeToDoc 0.5s ease-in forwards; pointer-events: none; }
-  @keyframes maximizeFromDoc {
-    0% { opacity: 0.3; transform: scale(0.1) translate(-350px, 300px); }
-    100% { opacity: 1; transform: scale(1) translate(0, 0); }
-  }
-  .window.restoring { animation: maximizeFromDoc 0.4s ease-out forwards; }
 </style>
 </head>
 <body>
@@ -944,21 +948,13 @@ function closeGotcha() {
 let isMinimized = false;
 function minimizeWindow() {
   const win = document.getElementById('window');
-  if (isMinimized) {
-    win.classList.remove('minimized');
-    win.classList.add('restoring');
-    setTimeout(() => win.classList.remove('restoring'), 400);
-    isMinimized = false;
-  } else {
-    win.classList.add('minimized');
-    isMinimized = true;
-  }
+  isMinimized = !isMinimized;
+  win.style.display = isMinimized ? 'none' : 'block';
 }
 
-// Restore on click when minimized
+// Restore on click anywhere when minimized
 document.addEventListener('click', (e) => {
-  const win = document.getElementById('window');
-  if (isMinimized && !win.contains(e.target) && e.target !== document.body) {
+  if (isMinimized) {
     minimizeWindow();
   }
 }, true);
@@ -971,29 +967,38 @@ function toggleMaximize() {
   win.classList.toggle('maximized', isMaximized);
 }
 
-// ─── DRAGGABLE ────────────────────────────────────────────────────────────────
-let isDragging = false;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
-const titlebar = document.querySelector('.titlebar');
-const win = document.getElementById('window');
+// ─── RESIZABLE ────────────────────────────────────────────────────────────────
+let isResizing = false;
+let startX = 0;
+let startY = 0;
+let startWidth = 0;
+let startHeight = 0;
 
-titlebar.addEventListener('mousedown', (e) => {
-  if (isMaximized || e.target.closest('.dot') || e.target.closest('.search-input')) return;
-  isDragging = true;
-  dragOffsetX = e.clientX - win.offsetLeft;
-  dragOffsetY = e.clientY - win.offsetTop;
-  win.style.position = 'fixed';
+const win = document.getElementById('window');
+const resizeHandle = document.createElement('div');
+resizeHandle.className = 'resize-handle se';
+win.appendChild(resizeHandle);
+
+resizeHandle.addEventListener('mousedown', (e) => {
+  if (isMaximized) return;
+  isResizing = true;
+  startX = e.clientX;
+  startY = e.clientY;
+  startWidth = win.offsetWidth;
+  startHeight = win.offsetHeight;
+  e.preventDefault();
 });
 
 document.addEventListener('mousemove', (e) => {
-  if (!isDragging) return;
-  win.style.left = (e.clientX - dragOffsetX) + 'px';
-  win.style.top = (e.clientY - dragOffsetY) + 'px';
+  if (!isResizing) return;
+  const newWidth = startWidth + (e.clientX - startX);
+  const newHeight = startHeight + (e.clientY - startY);
+  win.style.width = Math.max(300, newWidth) + 'px';
+  win.style.height = Math.max(200, newHeight) + 'px';
 });
 
 document.addEventListener('mouseup', () => {
-  isDragging = false;
+  isResizing = false;
 });
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
