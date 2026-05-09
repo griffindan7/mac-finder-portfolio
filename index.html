@@ -1005,7 +1005,7 @@ function openApp(app) {
 }
 
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'F3' || (e.ctrlKey && e.key === 'ArrowUp')) {
+  if (e.key === 'Escape' || e.key === 'm' || e.key === 'M') {
     e.preventDefault();
     toggleMissionControl();
   }
