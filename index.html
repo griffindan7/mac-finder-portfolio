@@ -675,7 +675,7 @@
         <div class="sidebar-item" id="si-linkedin" onclick="navigate('linkedin')">
           <span class="si-icon">💼</span> LinkedIn
         </div>
-        <div class="sidebar-item" id="si-cv" onclick="openQuickLook()">
+        <div class="sidebar-item" id="si-cv" onclick="navigate('cv')">
           <span class="si-icon">📄</span> CV / Résumé
         </div>
       </div>
@@ -799,7 +799,9 @@ const folders = {
   },
   cv: {
     label: 'CV.pdf', icon: '📄',
-    items: []
+    items: [
+      { id: 'cv',       name: 'CV.pdf',     icon: '📄', type: 'file',   kind: 'PDF Document', date: '01 Apr 2025', size: '142 KB' },
+    ]
   }
 };
 
